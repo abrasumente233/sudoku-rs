@@ -8,8 +8,6 @@
 #include <memory.h>
 #include <vector>
 
-#include "sudoku.h"
-
 struct Node;
 typedef Node Column;
 struct Node {
