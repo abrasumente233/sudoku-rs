@@ -9,5 +9,5 @@ edition = "2021"
 cc = "1.0.73"
 
 [dependencies]
-libc = "0.2.124"
+libc = "0.2.125"
 rayon = "1.5.2"

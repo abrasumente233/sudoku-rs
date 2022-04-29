@@ -8,6 +8,10 @@ extern "C" {
     fn dance_solve(sudoku: *mut u8);
 }
 
+extern "C" {
+    fn write(fd: i32, buf: *const libc::c_void, count: libc::size_t) -> libc::ssize_t;
+}
+
 fn solve_sudoku(sudoku: &mut [u8]) {
     unsafe { dance_solve(sudoku.as_mut_ptr()) }
 }
@@ -24,6 +28,7 @@ fn split_sudokus<'a>(sudokus: &'a mut str) -> Vec<&'a mut [u8]> {
     }
 }
 
+#[cfg(windows)]
 fn batch_print(sudokus: Vec<&mut [u8]>) {
     for sudoku in sudokus {
         let s = std::str::from_utf8(sudoku).unwrap();
@@ -31,8 +36,20 @@ fn batch_print(sudokus: Vec<&mut [u8]>) {
     }
 }
 
+#[cfg(unix)]
+fn batch_print(sudokus: Vec<&mut [u8]>) {
+    unsafe {
+        let buf = sudokus[0].as_ptr() as *const libc::c_void;
+        let count = 82 * sudokus.len() - 1;
+        write(1, buf, count);
+        let buf = b'\n';
+        let buf_ptr: *const u8 = &buf;
+        write(1, buf_ptr as *const libc::c_void, 1);
+    }
+}
+
 fn main() {
-    let mut sudokus = fs::read_to_string("tests/test10000").unwrap();
+    let mut sudokus = fs::read_to_string("tests/test1000000").unwrap();
 
     let sudokus = split_sudokus(&mut sudokus);
 
