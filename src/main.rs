@@ -1,28 +1,30 @@
 #![feature(slice_as_chunks)]
 
-use std::fs;
 use rayon::prelude::*;
+use std::fs;
 
 #[link(name = "sudoku")]
 extern "C" {
     fn dance_solve(sudoku: *mut u8);
 }
 
+#[cfg(unix)]
 extern "C" {
     fn write(fd: i32, buf: *const libc::c_void, count: libc::size_t) -> libc::ssize_t;
 }
 
-fn solve_sudoku(sudoku: &mut [u8]) {
+fn solve_sudoku(sudoku: &mut [u8]) -> &mut [u8] {
     unsafe { dance_solve(sudoku.as_mut_ptr()) }
+    sudoku
 }
 
-fn split_sudokus<'a>(sudokus: &'a mut str) -> Vec<&'a mut [u8]> {
+fn split_sudokus(sudokus: &mut str) -> Vec<&mut [u8]> {
     unsafe {
         sudokus
             .as_bytes_mut()
             .as_chunks_mut::<82>()
             .0
-            .into_iter()
+            .iter_mut()
             .map(|s| &mut s[..81])
             .collect()
     }
@@ -49,17 +51,21 @@ fn batch_print(sudokus: Vec<&mut [u8]>) {
 }
 
 fn main() {
-    let mut sudokus = fs::read_to_string("tests/test1000000").unwrap();
+    loop {
+        let mut filename = String::new();
+        std::io::stdin().read_line(&mut filename).unwrap();
+        let filename = filename.trim_end();
 
-    let sudokus = split_sudokus(&mut sudokus);
+        let mut sudokus = match fs::read_to_string(filename) {
+            Ok(s) => s,
+            Err(_) => break,
+        };
 
-    let v: Vec<&mut [u8]> = sudokus
-        .into_par_iter()
-        .map(|s| {
-            solve_sudoku(s);
-            s
-        })
-        .collect();
+        let v: Vec<&mut [u8]> = split_sudokus(&mut sudokus)
+            .into_par_iter()
+            .map(solve_sudoku)
+            .collect();
 
-    batch_print(v);
+        batch_print(v);
+    }
 }
