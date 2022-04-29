@@ -1,6 +1,7 @@
 #![feature(slice_as_chunks)]
 
 use std::fs;
+use rayon::prelude::*;
 
 #[link(name = "sudoku")]
 extern "C" {
@@ -31,12 +32,12 @@ fn batch_print(sudokus: Vec<&mut [u8]>) {
 }
 
 fn main() {
-    let mut sudokus = fs::read_to_string("tests/test50").unwrap();
+    let mut sudokus = fs::read_to_string("tests/test10000").unwrap();
 
     let sudokus = split_sudokus(&mut sudokus);
 
     let v: Vec<&mut [u8]> = sudokus
-        .into_iter()
+        .into_par_iter()
         .map(|s| {
             solve_sudoku(s);
             s

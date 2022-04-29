@@ -10,3 +10,4 @@ cc = "1.0.73"
 
 [dependencies]
 libc = "0.2.124"
+rayon = "1.5.2"
